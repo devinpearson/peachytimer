@@ -1,78 +1,72 @@
-<p align="center"><img src="https://res.cloudinary.com/dtfbvvkyp/image/upload/v1566331377/laravel-logolockup-cmyk-red.svg" width="400"></p>
+# Peachy Timer
 
-<p align="center">
-<a href="https://travis-ci.org/laravel/framework"><img src="https://travis-ci.org/laravel/framework.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://poser.pugx.org/laravel/framework/d/total.svg" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://poser.pugx.org/laravel/framework/v/stable.svg" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://poser.pugx.org/laravel/framework/license.svg" alt="License"></a>
-</p>
+A live timing light for Toastmasters meetings. The timekeeper runs the clock on one device; the speaker sees a
+full-screen green, amber or red light on any other (a phone, a laptop, a projector).
 
-## About Laravel
+- **Rooms.** The timekeeper starts a room and gets a 5-character code (no look-alike characters). Anyone can open
+  `/room/CODE` to show the light; only the timekeeper's device, or someone given the control link, can run it.
+- **Automatic light.** Choose a timing (Table Topics 1–2 min, Evaluation 2–3, Ice Breaker 4–6, speech 5–7, 8–10,
+  General Evaluation 5–7) or enter custom times. Green shows at the minimum, red at the maximum, amber halfway.
+- **Manual override.** Force any light (or off) at any time, as the old app's four buttons did.
+- **Speech log.** Each "Stop & reset" records the speaker, time and whether they were within time (30 seconds
+  either side of the minimum and maximum).
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+This replaces the original Laravel 7 + Pusher version.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Layout
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+| Folder | Stack | Modelled on |
+|---|---|---|
+| [`api/`](api) | Bun, Express 5, TypeScript, zod, `ws`, winston; Biome, knip, Jest | tm-scrapper |
+| [`web/`](web) | Next.js 15, React 19, Tailwind 4; ESLint, Vitest, Playwright | tm-dashboard-js |
 
-## Learning Laravel
+The API keeps rooms in memory (a timing session lasts one meeting) and removes rooms that have been idle for
+`ROOM_TTL_HOURS`. Restarting the API ends every room.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### API
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 1500 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+| Method | Path | |
+|---|---|---|
+| `GET` | `/api/health/live`, `/api/health/ready` | Health checks |
+| `GET` | `/api/presets` | Built-in timings |
+| `POST` | `/api/rooms` | Create a room: `{ presetId? }` → `{ room, controlToken, serverTime }` |
+| `GET` | `/api/rooms/:code` | Current state |
+| `POST` | `/api/rooms/:code/commands` | `Authorization: Bearer <controlToken>`; body is one of `start`, `pause`, `reset`, `set-preset`, `set-thresholds`, `set-light`, `set-speaker` (see `api/src/domain/timer.ts`) |
+| WS | `/ws?room=CODE` | Read-only feed: a `snapshot` on connect and after every change; closes with 4404 for an unknown or expired room |
 
-## Laravel Sponsors
+Snapshots carry the start time rather than ticking every second, so every screen computes the same clock from
+the server's time.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+## Running it
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[British Software Development](https://www.britishsoftware.co)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- [UserInsights](https://userinsights.com)
-- [Fragrantica](https://www.fragrantica.com)
-- [SOFTonSOFA](https://softonsofa.com/)
-- [User10](https://user10.com)
-- [Soumettre.fr](https://soumettre.fr/)
-- [CodeBrisk](https://codebrisk.com)
-- [1Forge](https://1forge.com)
-- [TECPRESSO](https://tecpresso.co.jp/)
-- [Runtime Converter](http://runtimeconverter.com/)
-- [WebL'Agence](https://weblagence.com/)
-- [Invoice Ninja](https://www.invoiceninja.com)
-- [iMi digital](https://www.imi-digital.de/)
-- [Earthlink](https://www.earthlink.ro/)
-- [Steadfast Collective](https://steadfastcollective.com/)
-- [We Are The Robots Inc.](https://watr.mx/)
-- [Understand.io](https://www.understand.io/)
-- [Abdel Elrafa](https://abdelelrafa.com)
-- [Hyper Host](https://hyper.host)
-- [Appoly](https://www.appoly.co.uk)
-- [OP.GG](https://op.gg)
+With Docker:
 
-## Contributing
+```bash
+docker compose up --build
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Then open http://localhost:3000.
 
-## Code of Conduct
+For development, run each app in its own terminal:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```bash
+cd api && bun install && bun run dev
+```
 
-## Security Vulnerabilities
+```bash
+cd web && npm install && npm run dev
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Copy `api/example.env` to `api/.env` and `web/example.env` to `web/.env.local` to change ports or origins.
 
-## License
+## Checks
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```bash
+cd api && NODE_ENV=test bun run verify
+```
+
+```bash
+cd web && npm run verify
+```
+
+The web end-to-end tests start the real API from `../api`, so install both apps first.

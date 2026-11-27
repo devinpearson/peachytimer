@@ -1,0 +1,25 @@
+# Runs the API and web app together: http://localhost:3000 (web), http://localhost:4000 (API).
+# WEB_PORT and API_PORT change the host ports. For a server, set PUBLIC_API_URL to the API's
+# public address and CORS_ORIGINS to the site's.
+services:
+  api:
+    build: ./api
+    environment:
+      PORT: 4000
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      ROOM_TTL_HOURS: ${ROOM_TTL_HOURS:-12}
+    ports:
+      - "${API_PORT:-4000}:4000"
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./web
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${PUBLIC_API_URL:-http://localhost:4000}
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped

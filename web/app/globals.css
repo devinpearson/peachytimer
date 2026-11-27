@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+/* Toastmasters International brand colours, as in tm-dashboard-js. */
+:root {
+  --toastmasters-loyal-blue: #004165;
+  --toastmasters-true-maroon: #772432;
+  --toastmasters-cool-gray: #a9b2b1;
+  --toastmasters-happy-yellow: #f2df74;
+
+  --background: #f9fafb;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  --color-brand-primary: var(--toastmasters-loyal-blue);
+  --color-brand-secondary: var(--toastmasters-true-maroon);
+  --color-brand-accent: var(--toastmasters-happy-yellow);
+  --color-brand-neutral: var(--toastmasters-cool-gray);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
